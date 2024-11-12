@@ -29,12 +29,10 @@ def compute_loss(y_hat, y, criterion, weighted_loss, seq_len):
         gt_angles = y[:, :, :3].flatten()
         gt_translation = y[:, :, 3:].flatten()
 
-        # predict pose
         y_hat = torch.reshape(y_hat, (y_hat.shape[0], seq_len-1, 6))
         estimated_angles = y_hat[:, :, :3].flatten()
         estimated_translation = y_hat[:, :, 3:].flatten()
 
-        # compute custom loss
         k = weighted_loss
         loss_angles = k * criterion(estimated_angles, gt_angles.float())
         loss_translation = criterion(estimated_translation, gt_translation.float())
@@ -209,7 +207,7 @@ if __name__ == '__main__':
     device = 'cuda'
 
     model = VOTransformer(image_num=31)
-    model.load_state_dict(torch.load('best_model_color.pth'))
+    model.load_state_dict(torch.load('best_model.pth'))
     model = model.to(device)
     model.eval()
 

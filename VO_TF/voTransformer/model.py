@@ -28,7 +28,7 @@ class MlpBlock(nn.Module):
             out = self.dropout1(out)
 
         out = self.fc2(out)
-        # out = self.dropout2(out)
+        out = self.dropout2(out)
         return out
 
 
@@ -103,9 +103,9 @@ class EncoderBlock(nn.Module):
         out += residual
         residual = out
 
-        # out = self.norm2(out)
-        # out = self.mlp(out)
-        # out += residual
+        out = self.norm2(out)
+        out = self.mlp(out)
+        out += residual
         return out
 
 class VOEncoder(nn.Module):
@@ -116,10 +116,8 @@ class VOEncoder(nn.Module):
         self.pos_embedding = VOPositionEmbs(image_num, des_num, des_dim, des_emb_dim, dropout_rate, device)
 
         # encoder blocks
-
         in_dim = des_emb_dim + 2 + 1
-        # in_dim = des_emb_dim + 2
-        # in_dim = des_emb_dim
+
         self.encoder_layers = nn.ModuleList()
         for i in range(num_layers):
             layer = EncoderBlock(in_dim, mlp_dim, num_heads, dropout_rate, attn_dropout_rate)
@@ -152,27 +150,6 @@ class VOPositionEmbs(nn.Module):
         self.device = device
 
     def forward(self, x):
-        # x_list = []
-        # for i in range(self.des_num):
-        #     ### patch/description encode ###
-        #     des = x[:, :, i, 2:self.des_dim+2]
-        #     des = self.des_embedding(des)
-        #     pixel = x[:, :, i, 0:2]
-        #     x_i = torch.concat([pixel, des], dim=2)
-        #
-        #     # frame_id
-        #     pose = torch.ones(x_i.size(0), x_i.size(1), 1)
-        #     pose = pose.to(self.device)
-        #     for j in range(self.image_num):
-        #         pose[:, j, 0] = j
-        #     # print(pose)
-        #     x_i = torch.concat([pose, x_i], dim=2)
-        #     # print(x_i)
-        #     print(x_i)
-        #     x_list.append(x_i)
-        #
-        # out = torch.concat(x_list, dim=1)
-        # print(out.shape)
 
         # direct encode with frame id
         pose = torch.ones(x.size(0), x.size(1), x.size(2), 1)
@@ -196,13 +173,13 @@ class VOPositionEmbs(nn.Module):
         # pe = pe.to(self.device)
         # out = x + pe
         # out = out.reshape(out.size(0), out.size(1) * out.size(2), out.size(3))
+
         if self.dropout:
             out = self.dropout(out)
 
         return out
 
 class VOTransformer(nn.Module):
-    """ Vision Transformer """
     def __init__(self,
                  image_num=31,
                  des_num=128,
@@ -236,25 +213,12 @@ class VOTransformer(nn.Module):
         )
 
         self.image_num = image_num
-        in_dim = des_num * (des_emb_dim + 2 + 1) #with frame_id
-        # in_dim = des_num * (des_emb_dim + 2)
-        # in_dim = des_num * des_emb_dim # no pixel
+        in_dim = des_num * (des_emb_dim + 2 + 1)
 
         self.linear1 = nn.Linear(in_dim, 256)
         self.linear2 = nn.Linear(image_num * 256, (image_num - 1) * 128)
         self.linear3 = nn.Linear((image_num - 1) * 128, (image_num - 1) * 32)
         self.linear4 = nn.Linear((image_num - 1) * 32, (image_num - 1) * 6)
-
-        # self.shortcut = nn.Linear(image_num * 128, (image_num - 1) * 6)
-
-        # separate
-        # self.linear1_t = nn.Linear(in_dim, 128)
-        # self.linear2_t = nn.Linear(image_num * 128, (image_num - 1) * 32)
-        # self.linear3_t = nn.Linear((image_num - 1) * 32, (image_num - 1) * 3)
-        #
-        # self.linear1_r = nn.Linear(in_dim, 128)
-        # self.linear2_r = nn.Linear(image_num * 128, (image_num - 1) * 64)
-        # self.linear3_r = nn.Linear((image_num - 1) * 64, (image_num - 1) * 3)
 
     def forward(self, x):
         x = self.transformer(x)
