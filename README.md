@@ -32,7 +32,7 @@ Create a virtual environment using Anaconda and activate it:
 ### Training
 run:
 
-    python train.py --device cuda --weighted_loss 1.0 --seq_len 31 --epoch 200
+    python train.py --device cuda --weighted_loss 1.0 --seq_len 31 --epoch 500
   
 ### Inference and  evalutaion
 You can predict the trajectory of a sequence by revising *predict.py* and running:
