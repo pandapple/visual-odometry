@@ -10,9 +10,7 @@ from torch.utils.data import random_split
 import time
 import math
 
-from voTransformer.model3 import VOTransformer
-# from voTransformer.model_separate import VOTransformer_rotation
-# from voTransformer.model2 import VOTransformer
+from voTransformer.model import VOTransformer
 from voTransformer.superpoint import SuperPoint
 from voTransformer.utils import rotation_to_euler
 
@@ -20,6 +18,12 @@ from voTransformer.utils import euler_to_rotation
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+# KITTI normalization
+mean_angles = np.array([1.7061e-5, 9.5582e-4, -5.5258e-5])
+std_angles = np.array([2.8256e-3, 1.7771e-2, 3.2326e-3])
+mean_t = np.array([-8.6736e-5, -1.6038e-2, 9.0033e-1])
+std_t = np.array([2.5584e-2, 1.8545e-2, 3.0352e-1])
 
 def compute_loss(y_hat, y, criterion, weighted_loss, seq_len):
     if weighted_loss == None:
@@ -101,8 +105,15 @@ def seq_predict_pose(vo_model, sp_model, img_dir, seq_len):
         # print(pose_pred)
 
         for p in range(overlap):
-            R_to_ref = euler_to_rotation(pose_pred[p, 0].item(), pose_pred[p, 1].item(), pose_pred[p, 2].item())
-            t_to_ref = np.array([[pose_pred[p, 3].item()], [pose_pred[p, 4].item()], [pose_pred[p, 5].item()]])
+            out = pose_pred[p].cpu().numpy()
+            angle = np.array([out[0][0], out[0][1], out[0][2]])
+            tran = np.array([out[0][3], out[0][4], out[0][5]])
+
+            angle_ = angle * np.array(std_angles) + np.array(mean_angles)
+            tran_ = tran * np.array(std_t) + np.array(mean_t)
+
+            R_to_ref = euler_to_rotation(angle_[0], angle_[1], angle_[2])
+            t_to_ref = np.array([[tran_[0]], [tran_[1]], [tran_[2]]])
 
             R_to_1 = matrix_R_ref @ R_to_ref
             t_to_1 = matrix_R_ref @ t_to_ref + matrix_t_ref
@@ -150,12 +161,9 @@ def seq_predict_pose(vo_model, sp_model, img_dir):
                 for k in range(kpts.size(0)):
                     v = int(kpts[k][0].item())
                     u = int(kpts[k][1].item())
-                    data_list = []
-                    data_list.append(u)
-                    data_list.append(v)
-                    # (-1, -1) -- (1, 1)
-                    for id1 in range(-1, 2):
-                        for id2 in range(-1, 2):
+                    data_list = [u / float(height), v / float(width)]
+                    for id1 in range(-3, 4):
+                        for id2 in range(-3, 4):
                             data_list.append(img_raw[u + id1][v + id2][0])
                             data_list.append(img_raw[u + id1][v + id2][1])
                             data_list.append(img_raw[u + id1][v + id2][2])
@@ -220,7 +228,7 @@ if __name__ == '__main__':
         'fill_with_random_keypoints': False  # data augmentation for training the matcher
     }
     superpoint = SuperPoint(default_config).to(device)
-    superpoint.load_state_dict(torch.load('voTransformer/superpoint_v1.pth'))
+    superpoint.load_state_dict(torch.load('voTransformer/superpoint.pth'))
     criterion = torch.nn.MSELoss()
     criterion = criterion.to(device)
     pose_list = seq_predict_pose(model, superpoint, '/home/pan/dataset/01/image_2')

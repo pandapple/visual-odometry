@@ -23,6 +23,12 @@ model_pth = str(Path(__file__).parent) + "/superpoint_v1.pth"
 
 device = 'cuda'
 
+# KITTI normalization
+mean_angles = np.array([1.7061e-5, 9.5582e-4, -5.5258e-5])
+std_angles = np.array([2.8256e-3, 1.7771e-2, 3.2326e-3])
+mean_t = np.array([-8.6736e-5, -1.6038e-2, 9.0033e-1])
+std_t = np.array([2.5584e-2, 1.8545e-2, 3.0352e-1])
+
 class VOdataloader(Dataset):
     def __init__(self, img_dir_list, pose_txt_list, seq_len):
         print("----------Start Data Loading----------")
@@ -73,9 +79,7 @@ class VOdataloader(Dataset):
                         for k in range(kpts.size(0)):
                             v = int(kpts[k][0].item())
                             u = int(kpts[k][1].item())
-                            data_list = []
-                            data_list.append(u/376.)
-                            data_list.append(v/1241.)
+                            data_list = [u / float(height), v / float(width)]
                             # (-3, -3) -- (3, 3)
                             for id1 in range(-3, 4):
                                 for id2 in range(-3, 4):
@@ -136,7 +140,11 @@ class VOdataloader(Dataset):
                     euler_np = rotation_to_euler(R)
                     # print(np.linalg.norm(euler_np))
 
-                    pose = torch.tensor([euler_np[0], euler_np[1], euler_np[2], t[0][0], t[1][0], t[2][0]])
+                    angles_ = (np.asarray(euler_np) - mean_angles) / std_angles
+                    t_ = (np.asarray(t[0]) - mean_t) / std_t
+
+                    # pose = torch.tensor([euler_np[0], euler_np[1], euler_np[2], t[0][0], t[1][0], t[2][0]])
+                    pose = torch.tensor([angles_[0], angles_[1], angles_[2], t_[0], t_[1], t_[2]])
                     pose = pose.unsqueeze(0)
 
                     pose_list.append(pose)

@@ -150,29 +150,27 @@ class VOPositionEmbs(nn.Module):
         self.device = device
 
     def forward(self, x):
-
         # direct encode with frame id
-        pose = torch.ones(x.size(0), x.size(1), x.size(2), 1)
-        for j in range(self.image_num):
-            pose[:, j, :, 0] = j
-        pose = pose.to(self.device)
-        out = torch.concat([pose, x], dim=3)
-        out = out.reshape(out.size(0), out.size(1) * out.size(2), out.size(3))
+        # pose = torch.ones(x.size(0), x.size(1), x.size(2), 1)
+        # for j in range(self.image_num):
+        #     pose[:, j, :, 0] = j
+        # pose = pose.to(self.device)
+        # out = torch.concat([pose, x], dim=3)
+        # out = out.reshape(out.size(0), out.size(1) * out.size(2), out.size(3))
 
         # positional encoding
-        # pe = torch.ones(x.size(0), x.size(1), x.size(2), x.size(3))
-        # print(x.size())
-        # for j in range(self.image_num):
-        #     d_model = self.des_dim + 2
-        #     div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        #     div_term_ = torch.exp(torch.arange(0, d_model-1, 2).float() * (-math.log(10000.0) / d_model))
-        #     pe[:, j, :, 0::2] = torch.sin(j * div_term)
-        #     pe[:, j, :, 1::2] = torch.cos(j * div_term_)
-
+        pe = torch.ones(x.size(0), x.size(1), x.size(2), x.size(3))
+        print(x.size())
+        for j in range(self.image_num):
+            d_model = self.des_dim + 2
+            div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+            div_term_ = torch.exp(torch.arange(0, d_model-1, 2).float() * (-math.log(10000.0) / d_model))
+            pe[:, j, :, 0::2] = torch.sin(j * div_term)
+            pe[:, j, :, 1::2] = torch.cos(j * div_term_)
         # print(pe)
-        # pe = pe.to(self.device)
-        # out = x + pe
-        # out = out.reshape(out.size(0), out.size(1) * out.size(2), out.size(3))
+        pe = pe.to(self.device)
+        out = x + pe
+        out = out.reshape(out.size(0), out.size(1) * out.size(2), out.size(3))
 
         if self.dropout:
             out = self.dropout(out)
@@ -190,11 +188,9 @@ class VOTransformer(nn.Module):
                  num_layers=2,
                  attn_dropout_rate=0.1,
                  dropout_rate=0.0,
-                 device='cuda',
-                 feat_dim=None):
+                 device='cuda'):
         super(VOTransformer, self).__init__()
 
-        # patch_num = image_num * des_num
         self.des_num = des_num
         self.des_emb_dim = des_emb_dim
         self.image_num = image_num
