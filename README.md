@@ -40,3 +40,7 @@ You can predict the trajectory of a sequence by revising *predict.py* and runnin
     python predict.py
 
 ## Result
+![](https://github.com/pandapple/visual-odometry/blob/main/IMG/seq_01_all2.png)
+
+## References
+Code adapted from [SuperGlue](https://github.com/magicleap/SuperGluePretrainedNetwork), [TSformer-VO](https://github.com/aofrancani/TSformer-VO)
