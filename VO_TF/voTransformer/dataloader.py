@@ -170,8 +170,8 @@ if __name__ == '__main__':
     train_data, eval_data = random_split(data, [round(0.8 * data.__len__()), round(0.2 * data.__len__())],
                                          generator=torch.Generator().manual_seed(128))
 
-    train_loader = Data.DataLoader(dataset=train_data, batch_size=1, shuffle=True)
-    eval_loader = Data.DataLoader(dataset=eval_data, batch_size=1, shuffle=True)
+    train_loader = Data.DataLoader(dataset=train_data, batch_size=4, shuffle=True)
+    eval_loader = Data.DataLoader(dataset=eval_data, batch_size=4, shuffle=True)
     train_saved_data = []
     for img_seq, pose_seq in train_loader:
         train_saved_data.append((img_seq, pose_seq))
